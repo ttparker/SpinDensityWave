@@ -34,7 +34,6 @@ class Hamiltonian
                                      // independent ones should be listed first
         double h;                           // external magnetic field strength
         std::vector<double> cosList;
-        MatrixD_t sigmaz;                             // for the external field
         
         rmMatrixX_t EDBASCoupling(int j,
                                   const std::vector<MatrixX_t>& rhoBasisH2) const;
