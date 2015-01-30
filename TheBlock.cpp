@@ -40,7 +40,7 @@ TheBlock TheBlock::nextBlock(const stepData& data, rmMatrixX_t& psiGround,
                                             cumulativeTruncationError);
     int nextBlockM = primeToRhoBasis.cols();
                                // number of states kept in next truncated block
-    if(data.infiniteStage)
+    if(data.infiniteStage)            // create corresponding environment block
     {
         data.compBlock -> primeToRhoBasis
             = createPrimeToRhoBasis(psiGround.adjoint() * psiGround, data.mMax,
@@ -125,7 +125,8 @@ vecMatPair TheBlock::createNewRhoBasisH2s(const vecMatD_t& siteBasisH2,
                                                 block));
         newOff1RhoBasisH2.push_back(exactDiag ?
                                     kp(off0RhoBasisH2[i], Id_d) :
-                                    changeBasis(kp(off0RhoBasisH2[i], Id_d),
+                                    changeBasis(kp(block -> off0RhoBasisH2[i],
+                                                   Id_d),
                                                 block));
     };
     return std::make_pair(newOff0RhoBasisH2, newOff1RhoBasisH2);
