@@ -5,6 +5,9 @@
 
 using namespace Eigen;
 
+#define jprime couplingConstants[2]
+#define h couplingConstants[3]
+
 int main()
 {
     clock_t start = clock();
@@ -111,7 +114,7 @@ int main()
         for(double groundStateErrorTolerance : groundStateErrorTolerances)
             fileout << " " << groundStateErrorTolerance;
         fileout << std::endl << std::endl;
-        data.ham.setParams(couplingConstants, lSys, k);
+        data.ham.setParams(couplingConstants, lSys);
         int skips = 0,
             runningKeptStates = d * d;
         for(; runningKeptStates <= data.mMax; skips++)
@@ -146,6 +149,20 @@ int main()
                               eastBlocks(lSys - 2 - skips);
              // initialize system - the last block is only used for odd-size ED
         TheBlock* eastBlocksStart = eastBlocks.data();
+
+
+
+
+        std::vector<double> intSpins;
+                         // initial ansatz for interstitial spin magnetizations
+        intSpins.reserve(lSys);
+        for(int i = 0; i < lSys; i++)
+            intSpins.push_back(cos(k * (i + .5)));
+        data.ham.calcEffectiveH(intSpins);
+
+
+
+
         westBlocks.front() = TheBlock(data.ham, true);
         eastBlocks.front() = TheBlock(data.ham, false);
                                          // initialize the edge one-site blocks
@@ -200,6 +217,19 @@ int main()
             for(int sweep = 1; sweep <= nSweeps; sweep++)
                                                     // perform the fDMRG sweeps
             {
+            
+            
+            
+            
+                fileout << "Interstitial spin polarizations:" << std::endl;
+                for(double d : intSpins)
+                    fileout << d << " ";
+                fileout << std::endl << std::endl;
+            
+            
+            
+            
+            
                 data.compBlock = eastBlocksStart + (lEFinal - 1);
                 data.lancTolerance = groundStateErrorTolerances[sweep]
                                      * groundStateErrorTolerances[sweep] / 2;
@@ -235,42 +265,39 @@ int main()
                           << " complete. Average truncation error: "
                           << cumulativeTruncationError / (4 * lSys - 8)
                           << std::endl;
-            };
-        };
-        data.compBlock = eastBlocksStart + (lEFinal - 1);
-        data.infiniteStage = false;
-        FinalSuperblock hSuperFinal
-            = westBlocks[lSFinal - 1].createHSuperFinal(data, psiGround, skips);
+
+
+
+
+
+
+                data.infiniteStage = false;
+                FinalSuperblock hSuperFinal
+                    = westBlocks[lSFinal - 1].createHSuperFinal(data, psiGround,
+                                                                skips);
                                                // calculate ground-state energy
-        fileout << "Ground state energy density = "
-                << hSuperFinal.gsEnergy / lSys << std::endl << std::endl;
-        if(calcObservables)
-        {
-            std::cout << "Calculating observables..." << std::endl;
-            VectorXd oneSiteVals;
-            MatrixXd twoSiteVals;
-            if(calcOneSiteExpValues)   // calculate one-site expectation values
+                fileout << "Ground state energy density = "
+                        << hSuperFinal.gsEnergy / lSys << std::endl << std::endl;
+                std::cout << "Calculating observables..." << std::endl;
+                VectorXd oneSiteVals;
                 oneSiteVals = oneSiteExpValues(oneSiteOp, rangeOfObservables,
                                                lSys, hSuperFinal, westBlocks,
                                                eastBlocks, fileout);
-            if(calcTwoSiteExpValues)   // calculate two-site expectation values
-                twoSiteVals = twoSiteExpValues(firstTwoSiteOp, secondTwoSiteOp,
-                                               rangeOfObservables, lSys,
-                                               hSuperFinal, westBlocks,
-                                               eastBlocks, fileout);
-            if(calcOneSiteExpValues && calcTwoSiteExpValues)
-            {
-                MatrixXd connectedCorrFunc
-                    = twoSiteVals - oneSiteVals * oneSiteVals.transpose();
-                for(int i = 0, end = rangeOfObservables * rangeOfObservables;
-                    i < end; i++)
-                    if(std::abs(connectedCorrFunc(i)) < observableThreshold)
-                        connectedCorrFunc(i) = 0.;
-                fileout << "Connected correlation function:\n"
-                        << connectedCorrFunc << std::endl << std::endl;
+                std::cout << std::endl;
+                intSpins.clear();
+                for(int i = 0; i < lSys - 2; i++)
+                    intSpins
+                        .push_back(2 *
+                                   (  (-jprime * (  oneSiteVals(i)
+                                                  + oneSiteVals(i + 1)) + h) > 0)
+                                    - 1);
+                data.ham.calcEffectiveH(intSpins);
+
+
+
+
             };
         };
-        std::cout << std::endl;
         clock_t stopTrial = clock();
         fileout << "Elapsed time: "
                 << float(stopTrial - startTrial)/CLOCKS_PER_SEC << " s"
@@ -282,6 +309,6 @@ int main()
     clock_t stop = clock();
     std::cout << "Done. Elapsed time: " << float(stop - start)/CLOCKS_PER_SEC
               << " s" << std::endl;
-
+    
     return 0;
 }

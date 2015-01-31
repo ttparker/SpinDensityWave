@@ -2,7 +2,7 @@
 #define GHP_H
 
 const int d = 2,                              // size of one-site Hilbert space
-          nCouplingConstants = 3,               // number of coupling constants
+          nCouplingConstants = 4,               // number of coupling constants
           nCouplingOperators = 3,               // number of coupling operators
           nIndepCouplingOperators = 2;
                  // number that are independent - must be <= nCouplingOperators

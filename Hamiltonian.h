@@ -21,8 +21,8 @@ class Hamiltonian
 {
     public:
         Hamiltonian();
-        void setParams(const std::vector<double>& couplingConstants, int lSys,
-                       double k);
+        void setParams(const std::vector<double>& couplingConstants, int lSys),
+             calcEffectiveH(const std::vector<double>& intSpins);
         
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     
@@ -32,8 +32,10 @@ class Hamiltonian
         std::vector<MatrixD_t, Eigen::aligned_allocator<MatrixD_t>> siteBasisH2;
                                      // site-basis coupling operators - the
                                      // independent ones should be listed first
-        double h;                           // external magnetic field strength
-        std::vector<double> cosList;
+        double h;              // strength of externally applied magnetic field
+        std::vector<double> hFromIntSpins;
+                                      // effective field on chain spins induced
+                                      // by neighboring interstitial spins
         
         rmMatrixX_t EDBASCoupling(int j,
                                   const std::vector<MatrixX_t>& rhoBasisH2) const;
