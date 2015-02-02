@@ -101,9 +101,9 @@ int main()
         filein >> k >> rangeOfObservables >> data.mMax >> nSweeps;
         if(rangeOfObservables == -1)
             rangeOfObservables = lSys;
-        std::vector<double> groundStateErrorTolerances(nSweeps + 1);
+        std::vector<double> lancTolerances(nSweeps + 1);
         for(int sweep = 0; sweep <= nSweeps; sweep++)
-            filein >> groundStateErrorTolerances[sweep];
+            filein >> lancTolerances[sweep];
         
         fileout << "System length: " << lSys << "\nCoupling constants:";
         for(double couplingConstant : couplingConstants)
@@ -111,8 +111,8 @@ int main()
         fileout << "\nWave number: " << k << "\nMaximum bond dimension: "
                 << data.mMax << "\nNumber of sweeps: " << nSweeps
                 << "\nLanczos tolerances:";
-        for(double groundStateErrorTolerance : groundStateErrorTolerances)
-            fileout << " " << groundStateErrorTolerance;
+        for(double lancTolerance : lancTolerances)
+            fileout << " " << lancTolerance;
         fileout << std::endl << std::endl;
         data.ham.setParams(couplingConstants, lSys);
         int skips = 0,
@@ -149,20 +149,12 @@ int main()
                               eastBlocks(lSys - 2 - skips);
              // initialize system - the last block is only used for odd-size ED
         TheBlock* eastBlocksStart = eastBlocks.data();
-
-
-
-
         std::vector<double> intSpins;
                          // initial ansatz for interstitial spin magnetizations
         intSpins.reserve(lSys);
         for(int i = 0; i < lSys; i++)
             intSpins.push_back(cos(k * (i + .5)));
         data.ham.calcEffectiveH(intSpins);
-
-
-
-
         westBlocks.front() = TheBlock(data.ham, true);
         eastBlocks.front() = TheBlock(data.ham, false);
                                          // initialize the edge one-site blocks
@@ -172,8 +164,7 @@ int main()
         data.exactDiag = true;
         data.compBlock = eastBlocksStart;
         data.infiniteStage = true;
-        data.lancTolerance = groundStateErrorTolerances.front()
-                             * groundStateErrorTolerances.front() / 2;
+        data.lancTolerance = lancTolerances.front();
         rmMatrixX_t psiGround;                    // seed for Lanczos algorithm
         double cumulativeTruncationError = 0.;
         for(int site = 0; site < skips; site++, data.compBlock++) // initial ED
@@ -217,23 +208,13 @@ int main()
             for(int sweep = 1; sweep <= nSweeps; sweep++)
                                                     // perform the fDMRG sweeps
             {
-            
-            
-            
-            
                 fileout << "Sweep " << sweep
                         << ":\nInterstitial spin polarizations:" << std::endl;
                 for(double d : intSpins)
                     fileout << d << " ";
                 fileout << std::endl << std::endl;
-            
-            
-            
-            
-            
                 data.compBlock = eastBlocksStart + (lEFinal - 1);
-                data.lancTolerance = groundStateErrorTolerances[sweep]
-                                     * groundStateErrorTolerances[sweep] / 2;
+                data.lancTolerance = lancTolerances[sweep];
                 data.beforeCompBlock = data.compBlock - 1;
                 cumulativeTruncationError = 0.;
                 for(int site = lSFinal - 1; site < endSweep;
@@ -266,12 +247,6 @@ int main()
                           << " complete. Average truncation error: "
                           << cumulativeTruncationError / (2 * lSys - 4)
                           << std::endl;
-
-
-
-
-
-
                 data.infiniteStage = false;
                 FinalSuperblock hSuperFinal
                     = westBlocks[lSFinal - 1].createHSuperFinal(data, psiGround,
@@ -296,10 +271,6 @@ int main()
                                    ((-jprime * oneSiteVals(lSys - 1) + h) > 0)
                                     - 1);
                 data.ham.calcEffectiveH(intSpins);
-
-
-
-
             };
         };
         clock_t stopTrial = clock();
