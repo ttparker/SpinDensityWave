@@ -221,7 +221,8 @@ int main()
             
             
             
-                fileout << "Interstitial spin polarizations:" << std::endl;
+                fileout << "Sweep " << sweep
+                        << ":\nInterstitial spin polarizations:" << std::endl;
                 for(double d : intSpins)
                     fileout << d << " ";
                 fileout << std::endl << std::endl;
@@ -263,7 +264,7 @@ int main()
                                                      cumulativeTruncationError);
                 std::cout << "Sweep " << sweep
                           << " complete. Average truncation error: "
-                          << cumulativeTruncationError / (4 * lSys - 8)
+                          << cumulativeTruncationError / (2 * lSys - 4)
                           << std::endl;
 
 
@@ -285,11 +286,14 @@ int main()
                                                eastBlocks, fileout);
                 std::cout << std::endl;
                 intSpins.clear();
-                for(int i = 0; i < lSys - 2; i++)
+                for(int i = 0; i < lSys - 1; i++)
                     intSpins
                         .push_back(2 *
                                    (  (-jprime * (  oneSiteVals(i)
                                                   + oneSiteVals(i + 1)) + h) > 0)
+                                    - 1);
+                intSpins.push_back(2 *
+                                   ((-jprime * oneSiteVals(lSys - 1) + h) > 0)
                                     - 1);
                 data.ham.calcEffectiveH(intSpins);
 
