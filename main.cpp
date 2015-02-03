@@ -272,6 +272,10 @@ int main()
                                     - 1);
                 data.ham.calcEffectiveH(intSpins);
             };
+            fileout << "Final interstitial spin polarizations:" << std::endl;
+            for(double d : intSpins)
+                fileout << d << " ";
+            fileout << std::endl << std::endl;
         };
         clock_t stopTrial = clock();
         fileout << "Elapsed time: "
