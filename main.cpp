@@ -205,6 +205,8 @@ int main()
             int endSweep = lSys - 4 - skips;              // last site of sweep
             psiGround = randomSeed(westBlocks[lSFinal - 1],
                                    eastBlocks[lEFinal - 1]);
+            double chainEnergy;
+               // contribution to GS energy captured directly by DMRG algorithm
             for(int sweep = 1; sweep <= nSweeps; sweep++)
                                                     // perform the fDMRG sweeps
             {
@@ -252,8 +254,9 @@ int main()
                     = westBlocks[lSFinal - 1].createHSuperFinal(data, psiGround,
                                                                 skips);
                                                // calculate ground-state energy
+                chainEnergy = hSuperFinal.gsEnergy;
                 fileout << "Ground state energy density = "
-                        << hSuperFinal.gsEnergy / lSys << std::endl << std::endl;
+                        << chainEnergy / lSys << std::endl << std::endl;
                 std::cout << "Calculating observables..." << std::endl;
                 VectorXd oneSiteVals;
                 oneSiteVals = oneSiteExpValues(oneSiteOp, rangeOfObservables,
@@ -263,19 +266,28 @@ int main()
                 intSpins.clear();
                 for(int i = 0; i < lSys - 1; i++)
                     intSpins
-                        .push_back(2 *
-                                   (  (-jprime * (  oneSiteVals(i)
-                                                  + oneSiteVals(i + 1)) + h) > 0)
-                                    - 1);
-                intSpins.push_back(2 *
-                                   ((-jprime * oneSiteVals(lSys - 1) + h) > 0)
-                                    - 1);
+                        .push_back(  2 * (  (-jprime * (  oneSiteVals(i)
+                                                        + oneSiteVals(i + 1))
+                                             + h / 2)
+                                          > 0)
+                                   - 1);
+                intSpins.push_back(  2 * ((-jprime * oneSiteVals(lSys - 1)
+                                           + h / 2) > 0)
+                                   - 1);
                 data.ham.calcEffectiveH(intSpins);
             };
+            double intEnergy = 0.;
+            for(double sz : intSpins)
+                intEnergy += -h / 2 * sz;
             fileout << "Final interstitial spin polarizations:" << std::endl;
             for(double d : intSpins)
                 fileout << d << " ";
-            fileout << std::endl << std::endl;
+            fileout << std::endl << std::endl
+                    << "Contribution to GS energy density from field on "
+                    << "interstitial spins: " << intEnergy / lSys << std::endl 
+                    << "Total GS energy density: "
+                    << (chainEnergy + intEnergy) / lSys << std::endl
+                    << std::endl;
         };
         clock_t stopTrial = clock();
         fileout << "Elapsed time: "
