@@ -153,7 +153,7 @@ int main()
                          // initial ansatz for interstitial spin magnetizations
         intSpins.reserve(lSys);
         for(int i = 0; i < lSys; i++)
-            intSpins.push_back(cos(k * (i + .5)));
+            intSpins.push_back(.5 * cos(k * (i + .5)));
         data.ham.calcEffectiveH(intSpins);
         westBlocks.front() = TheBlock(data.ham, true);
         eastBlocks.front() = TheBlock(data.ham, false);
@@ -266,14 +266,11 @@ int main()
                 intSpins.clear();
                 for(int i = 0; i < lSys - 1; i++)
                     intSpins
-                        .push_back(  2 * (  (-jprime * (  oneSiteVals(i)
-                                                        + oneSiteVals(i + 1))
-                                             + h / 2)
-                                          > 0)
-                                   - 1);
-                intSpins.push_back(  2 * ((-jprime * oneSiteVals(lSys - 1)
-                                           + h / 2) > 0)
-                                   - 1);
+                        .push_back((  (-jprime * (  oneSiteVals(i)
+                                                  + oneSiteVals(i + 1)) + h / 2)
+                                    > 0) - .5);
+                intSpins.push_back(((  -jprime * oneSiteVals(lSys - 1)
+                                     + h / 2) > 0) - .5);
                 data.ham.calcEffectiveH(intSpins);
             };
             double intEnergy = 0.;
