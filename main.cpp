@@ -195,6 +195,9 @@ int main()
         std::cout << "iDMRG average truncation error: "
                   << cumulativeTruncationError / (lSys - 2)
                   << std::endl;       // handles both even and odd system sizes
+        fileout << "iDMRG average truncation error: "
+                << cumulativeTruncationError / (lSys - 2)
+                << std::endl << std::endl;
         if(completeED || nSweeps == 0)
             psiGround = randomSeed(westBlocks[lSFinal - 1],
                                    eastBlocks[lEFinal - 1]);
@@ -249,6 +252,9 @@ int main()
                           << " complete. Average truncation error: "
                           << cumulativeTruncationError / (2 * lSys - 4)
                           << std::endl;
+                fileout << "Average truncation error: "
+                        << cumulativeTruncationError / (2 * lSys - 4)
+                        << std::endl;
                 data.infiniteStage = false;
                 FinalSuperblock hSuperFinal
                     = westBlocks[lSFinal - 1].createHSuperFinal(data, psiGround,
