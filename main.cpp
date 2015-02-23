@@ -95,10 +95,15 @@ int main()
         std::vector<double> couplingConstants(nCouplingConstants);
         for(int i = 0; i < nCouplingConstants; i++)
             filein >> couplingConstants[i];
-        double k;              // wave number of rotation of interstitial spins
+        int wavelength;       // wavelength of interstitial spin pattern ansatz
+        filein >> wavelength;
+        std::vector<double> intSpinPattern(wavelength);
+                                     // repeating pattern of interstitial spins
+        for(int i = 0; i < wavelength; i++)
+            filein >> intSpinPattern[i];
         int rangeOfObservables, // number of sites at which to measure observables
             nSweeps;                        // number of sweeps to be performed
-        filein >> k >> rangeOfObservables >> data.mMax >> nSweeps;
+        filein >> rangeOfObservables >> data.mMax >> nSweeps;
         if(rangeOfObservables == -1)
             rangeOfObservables = lSys;
         std::vector<double> lancTolerances(nSweeps + 1);
@@ -108,7 +113,10 @@ int main()
         fileout << "System length: " << lSys << "\nCoupling constants:";
         for(double couplingConstant : couplingConstants)
             fileout << " " << couplingConstant;
-        fileout << "\nWave number: " << k << "\nMaximum bond dimension: "
+        fileout << "\nInitial pattern: ";
+        for(double sz : intSpinPattern)
+            fileout << sz << " ";
+        fileout << "\nMaximum bond dimension: "
                 << data.mMax << "\nNumber of sweeps: " << nSweeps
                 << "\nLanczos tolerances:";
         for(double lancTolerance : lancTolerances)
@@ -153,7 +161,7 @@ int main()
                          // initial ansatz for interstitial spin magnetizations
         intSpins.reserve(lSys);
         for(int i = 0; i < lSys; i++)
-            intSpins.push_back(.5 * cos(k * (i + .5)));
+            intSpins.push_back(intSpinPattern[i % wavelength]);
         data.ham.calcEffectiveH(intSpins);
         westBlocks.front() = TheBlock(data.ham, true);
         eastBlocks.front() = TheBlock(data.ham, false);
