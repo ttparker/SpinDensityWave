@@ -18,7 +18,7 @@ FreeFunctions.o: $(COMMONHS2) GlobalPrecisionParameters.h
 
 Lanczos.o: $(COMMONHS1) Hamiltonian.h TheBlock.h GlobalPrecisionParameters.h
 
-main.o: $(COMMONHS2) FreeFunctions.h GlobalPrecisionParameters.h ObservableOps.h
+main.o: $(COMMONHS2) FreeFunctions.h GlobalPrecisionParameters.h
 
 $(PROG).o: $(COMMONHS1) Hamiltonian.h TheBlock.h
 

@@ -21,65 +21,7 @@ int main()
     
     // read in parameters that are constant across all trials:
     int nTrials;
-    bool calcObservables;
-    filein >> nTrials >> calcObservables;
-    bool calcOneSiteExpValues;
-    int indexOfOneSiteOp;
-    obsMatrixD_t oneSiteOp;
-    bool calcTwoSiteExpValues;
-    int indexOfFirstTwoSiteOp,
-        indexOfSecondTwoSiteOp;
-    obsMatrixD_t firstTwoSiteOp,
-                 secondTwoSiteOp;
-    #include "ObservableOps.h"
-    if(calcObservables)
-    {
-        filein >> calcOneSiteExpValues;
-        if(calcOneSiteExpValues)
-        {
-            filein >> indexOfOneSiteOp;
-            oneSiteOp = obsList[indexOfOneSiteOp];
-        };
-        filein >> calcTwoSiteExpValues;
-        if(calcTwoSiteExpValues)
-        {
-            filein >> indexOfFirstTwoSiteOp >> indexOfSecondTwoSiteOp;
-            firstTwoSiteOp = obsList[indexOfFirstTwoSiteOp];
-            secondTwoSiteOp = obsList[indexOfSecondTwoSiteOp];
-        };
-    };
-    
-    std::ofstream infoout("Output/Info");
-    if(infoout)
-    {
-        infoout << "Number of trials: " << nTrials
-                << "\nCalculate observables? "
-                << (calcObservables ? "Yes" : "No") << std::endl;
-        if(calcObservables)
-        {
-            infoout << "Calculate one-site observables? ";
-            if(calcOneSiteExpValues)
-                infoout << "Yes\nIndex of one-site observable: "
-                        << indexOfOneSiteOp << std::endl;
-            else
-                infoout << "No" << std::endl;
-            infoout << "Calculate two-site observables? ";
-            if(calcTwoSiteExpValues)
-                infoout << "Yes\nIndices of two-site observables: "
-                        << indexOfFirstTwoSiteOp << " "
-                        << indexOfSecondTwoSiteOp << std::endl;
-            else
-                infoout << "No" << std::endl;
-            infoout << "Observables threshold: " << observableThreshold
-                    << std::endl;
-        };
-    }
-    else
-    {
-        std::cerr << "Couldn't open output files." << std::endl;
-        exit(EXIT_FAILURE);
-    };
-    infoout.close();
+    filein >> nTrials;
     stepData data; // this struct will contain most of the important parameters
     data.compBlock = data.beforeCompBlock = NULL;
     for(int trial = 1; trial <= nTrials; trial++)
@@ -90,7 +32,7 @@ int main()
         fileout << "Trial " << trial << ":\n" << std::endl;
         
         // read in parameters that vary over trials:
-        int lSys;                           // system length
+        int lSys;                                              // system length
         filein >> lSys;
         std::vector<double> couplingConstants(nCouplingConstants);
         for(int i = 0; i < nCouplingConstants; i++)
@@ -101,11 +43,8 @@ int main()
                                      // repeating pattern of interstitial spins
         for(int i = 0; i < wavelength; i++)
             filein >> intSpinPattern[i];
-        int rangeOfObservables, // number of sites at which to measure observables
-            nSweeps;                        // number of sweeps to be performed
-        filein >> rangeOfObservables >> data.mMax >> nSweeps;
-        if(rangeOfObservables == -1)
-            rangeOfObservables = lSys;
+        int nSweeps;                        // number of sweeps to be performed
+        filein >> data.mMax >> nSweeps;
         std::vector<double> lancTolerances(nSweeps + 1);
         for(int sweep = 0; sweep <= nSweeps; sweep++)
             filein >> lancTolerances[sweep];
@@ -181,9 +120,8 @@ int main()
                                              cumulativeTruncationError,
                                              eastBlocksStart + site + 1);
         data.exactDiag = completeED;
-        for(int site = skips, end = lEFinal - 1; site < end; site++,
-                                                             data.compBlock++)
-                                                                       // iDMRG
+        for(int site = skips, end = lEFinal - 1; site < end;
+            site++, data.compBlock++)                                  // iDMRG
         {
             psiGround = randomSeed(westBlocks[site], eastBlocks[site]);
             westBlocks[site + 1]
@@ -200,12 +138,9 @@ int main()
                 = westBlocks[lSFinal - 2].nextBlock(data, psiGround,
                                                     cumulativeTruncationError);
         };
-        std::cout << "iDMRG average truncation error: "
-                  << cumulativeTruncationError / (lSys - 2)
-                  << std::endl;       // handles both even and odd system sizes
         fileout << "iDMRG average truncation error: "
-                << cumulativeTruncationError / (lSys - 2)
-                << std::endl << std::endl;
+                << cumulativeTruncationError / (lSys - 2) << std::endl
+                << std::endl;         // handles both even and odd system sizes
         if(completeED || nSweeps == 0)
             psiGround = randomSeed(westBlocks[lSFinal - 1],
                                    eastBlocks[lEFinal - 1]);
@@ -256,10 +191,7 @@ int main()
                     westBlocks[site + 1]
                         = westBlocks[site].nextBlock(data, psiGround,
                                                      cumulativeTruncationError);
-                std::cout << "Sweep " << sweep
-                          << " complete. Average truncation error: "
-                          << cumulativeTruncationError / (2 * lSys - 4)
-                          << std::endl;
+                std::cout << "Sweep " << sweep << " complete." << std::endl;
                 fileout << "Average truncation error: "
                         << cumulativeTruncationError / (2 * lSys - 4)
                         << std::endl;
@@ -269,48 +201,72 @@ int main()
                                                                 skips);
                                                // calculate ground-state energy
                 chainEnergy = hSuperFinal.gsEnergy;
-                fileout << "Ground state energy density = "
+                fileout << "Chain ground state energy density: "
                         << chainEnergy / lSys << std::endl << std::endl;
                 std::cout << "Calculating observables..." << std::endl;
-                VectorXd oneSiteVals;
-                oneSiteVals = oneSiteExpValues(oneSiteOp, rangeOfObservables,
-                                               lSys, hSuperFinal, westBlocks,
-                                               eastBlocks, fileout);
-                std::cout << std::endl;
+                obsMatrixD_t sz;
+                sz << .5, 0.,
+                      0., -.5;
+                VectorXd oneSiteSzs
+                    = oneSiteExpValues(sz, lSys, hSuperFinal, westBlocks,
+                                       eastBlocks);
+                fileout << "Expectation value of S_z at each chain site:\n"
+                        << oneSiteSzs << std::endl << std::endl;
+                std::vector<double> nnCorrelations,
+                                    nnnCorrelations;
+                nnCorrelations.reserve(lSys - 1);
+                nnnCorrelations.reserve(lSys - 2);
+                for(int i = 0, end = lSys - 2; i < end; i++)
+                {
+                    nnCorrelations.push_back(expiDotj(i, i + 1, hSuperFinal,
+                                                      westBlocks, eastBlocks));
+                    nnnCorrelations.push_back(expiDotj(i, i + 2, hSuperFinal,
+                                                       westBlocks, eastBlocks));
+                };
+                nnCorrelations.push_back(expiDotj(lSys - 2, lSys - 1, hSuperFinal,
+                                                  westBlocks, eastBlocks));
+                fileout << "Expectation values of S_i dot S_{i + 1}:"
+                        << std::endl;
+                for(double d : nnCorrelations)
+                    fileout << d << std::endl;
+                fileout << std::endl
+                        << "Expectation values of S_i dot S_{i + 2}:\n";
+                for(double d : nnnCorrelations)
+                    fileout << d << std::endl;
+                fileout << std::endl;
+                // Determine the polarizations of the next iterations'
+                // interstitial spins:
                 intSpins.clear();
+                RowVector3d hTotal;
+                              // induced + applied fields on interstitial spins
                 for(int i = 0; i < lSys - 1; i++)
                     intSpins
-                        .push_back((  (-jprime * (  oneSiteVals(i)
-                                                  + oneSiteVals(i + 1)) + h / 2)
-                                    > 0) - .5);
-                intSpins.push_back(((  -jprime * oneSiteVals(lSys - 1)
-                                     + h / 2) > 0) - .5);
+                        .push_back(((  (-jprime * (  oneSiteSzs(i)
+                                                   + oneSiteSzs(i + 1)) + h / 2)
+                                     > 0) - .5) * (d - 1));
+                intSpins.push_back((((  -jprime * oneSiteSzs(lSys - 1)
+                                      + h / 2) > 0) - .5) * (d - 1));
+                      // induced + applied field on rightmost interstitial spin
                 data.ham.calcEffectiveH(intSpins);
             };
-            double intEnergy = 0.;
-            for(double sz : intSpins)
-                intEnergy += -h / 2 * sz;
             fileout << "Final interstitial spin polarizations:" << std::endl;
             for(double d : intSpins)
                 fileout << d << " ";
             fileout << std::endl << std::endl
-                    << "Contribution to GS energy density from field on "
-                    << "interstitial spins: " << intEnergy / lSys << std::endl 
-                    << "Total GS energy density: "
-                    << (chainEnergy + intEnergy) / lSys << std::endl
-                    << std::endl;
+                    << "Chain ground state energy density: "
+                    << chainEnergy / lSys << std::endl << std::endl;
         };
         clock_t stopTrial = clock();
         fileout << "Elapsed time: "
-                << float(stopTrial - startTrial)/CLOCKS_PER_SEC << " s"
+                << float(stopTrial - startTrial) / CLOCKS_PER_SEC << " s"
                 << std::endl;
         fileout.close();
     };
     filein.close();
     
     clock_t stop = clock();
-    std::cout << "Done. Elapsed time: " << float(stop - start)/CLOCKS_PER_SEC
+    std::cout << "Done. Elapsed time: " << float(stop - start) / CLOCKS_PER_SEC
               << " s" << std::endl;
     
     return 0;
-}
+};
